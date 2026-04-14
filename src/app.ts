@@ -41,9 +41,9 @@ apiRouter.get("/health", (req, res) => {
   res.json({ 
     status: "ok", 
     time: new Date().toISOString(),
-    version: "1.0.3-genai-stable-20260414",
+    version: "1.0.4-genai-stable-20260414",
     engine: "google-genai-v1",
-    build_time: "2026-04-14T22:53:00Z"
+    build_time: "2026-04-14T23:05:00Z"
   });
 });
 
@@ -74,6 +74,14 @@ apiRouter.get("/ai/test", async (req, res) => {
 });
 
 // 🔹 ANALYZE (CORE IA)
+apiRouter.get("/ai/analyze", (req, res) => {
+  res.json({ 
+    message: "ROXTOR ANALYZE ENDPOINT", 
+    status: "active",
+    note: "Este endpoint requiere una petición POST con un prompt en el cuerpo."
+  });
+});
+
 apiRouter.post("/ai/analyze", async (req, res) => {
   try {
     const { prompt, image, catalog, module } = req.body;
@@ -173,20 +181,19 @@ apiRouter.post("/webhook", async (req, res) => {
   }
 });
 
-// Montar el router en /api para compatibilidad local
+// Montar el router en ambos prefijos para máxima compatibilidad con redirects
 app.use("/api", apiRouter);
-
-// Montar el router en / para compatibilidad con el redirect de Netlify (:splat)
-// Solo si estamos en Netlify para no interferir con el frontend en desarrollo local
-if (process.env.NETLIFY) {
-  app.use("/", apiRouter);
-}
+app.use("/", apiRouter);
 
 // 🔹 404 API HANDLER
-// Solo responde con JSON si es una ruta de API o estamos en Netlify
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api") || process.env.NETLIFY) {
-    res.status(404).json({ error: "API endpoint not found", path: req.path });
+  if (req.path.startsWith("/api") || req.path.includes("/ai/")) {
+    res.status(404).json({ 
+      error: "API endpoint not found", 
+      path: req.path,
+      method: req.method,
+      suggestion: "Verifica que el método (GET/POST) y la ruta sean correctos."
+    });
   } else {
     next();
   }
