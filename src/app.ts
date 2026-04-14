@@ -41,8 +41,9 @@ apiRouter.get("/health", (req, res) => {
   res.json({ 
     status: "ok", 
     time: new Date().toISOString(),
-    version: "1.0.2-genai-stable",
-    engine: "google-genai-v1"
+    version: "1.0.3-genai-stable-20260414",
+    engine: "google-genai-v1",
+    build_time: "2026-04-14T22:53:00Z"
   });
 });
 
@@ -75,13 +76,24 @@ apiRouter.get("/ai/test", async (req, res) => {
 // 🔹 ANALYZE (CORE IA)
 apiRouter.post("/ai/analyze", async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, image, catalog, module } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: "Missing prompt" });
     }
 
-    const result = await radarAI(prompt);
+    // Si se especifica un módulo, usamos el correspondiente
+    let result;
+    if (module === 'audit') {
+      result = await auditAI(prompt, image);
+    } else if (module === 'inventory') {
+      result = await inventoryAI(prompt, image);
+    } else if (module === 'report') {
+      result = await reportAI(prompt, image);
+    } else {
+      // Por defecto usamos radarAI
+      result = await radarAI(prompt, image, catalog);
+    }
 
     res.json(result);
   } catch (error: any) {
@@ -90,6 +102,17 @@ apiRouter.post("/ai/analyze", async (req, res) => {
       error: "AI_ENGINE_FAILURE",
       details: error.message,
     });
+  }
+});
+
+// 🔹 RADAR (COMPATIBILIDAD)
+apiRouter.post("/ai/radar", async (req, res) => {
+  try {
+    const { message, image, catalog } = req.body;
+    const result = await radarAI(message || "", image, catalog);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ error: "AI_ENGINE_FAILURE", details: error.message });
   }
 });
 

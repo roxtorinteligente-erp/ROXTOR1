@@ -44,7 +44,7 @@ export async function runAI(
 
     // Llamada a la API moderna de Google GenAI
     const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-flash-latest",
       contents: { parts },
       config: {
         systemInstruction: systemInstruction,

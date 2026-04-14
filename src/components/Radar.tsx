@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Product, AppSettings, Order } from '../types';
 import { compressImage } from '../utils/storage';
 import { sendWhatsappMessage } from '../services/whatsappService';
+import { callRoxtorAI } from '../utils/ai';
 import { 
   Radar as RadarIcon, Send, FileUp, Loader2, CheckCircle, Zap 
 } from 'lucide-react';
@@ -29,24 +30,6 @@ const Radar: React.FC<Props> = ({
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const callRadarAPI = async (message?: string, image?: string) => {
-    const res = await fetch('/api/ai/radar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        message, 
-        image,
-        catalog: products.map(p => ({ name: p.name, priceRetail: p.priceRetail }))
-      })
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || "Error en el Radar");
-    }
-    return data;
-  };
 
   const handleAIService = async (text?: string, imageBase64?: string) => {
     const userPrompt = text || input.trim();
@@ -90,7 +73,18 @@ const Radar: React.FC<Props> = ({
     }
 
     try {
-      const response = await callRadarAPI(userPrompt, imageBase64);
+      const response = await callRoxtorAI(userPrompt, imageBase64, {
+        catalog: products.map(p => ({ 
+          name: p.name, 
+          priceRetail: p.priceRetail,
+          material: p.material
+        })),
+        module: 'radar'
+      });
+
+      if (response.error) {
+        throw new Error(response.error === "AI_ENGINE_FAILURE" ? "AI_ENGINE_FAILURE" : response.suggested_reply);
+      }
 
       // Mensaje IA
       onNewMessage?.({
@@ -100,7 +94,7 @@ const Radar: React.FC<Props> = ({
       });
 
       // Crear orden
-      if (response.new_order) {
+      if (response.new_order || response.action === 'CREAR_ORDEN') {
         const newOrder: Order = {
           id: `ROX-${Date.now()}`,
           orderNumber: `WEB-${Date.now().toString().slice(-4)}`,
