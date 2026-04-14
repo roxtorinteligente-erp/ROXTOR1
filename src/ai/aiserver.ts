@@ -82,7 +82,11 @@ export async function runAI(
     }
   } catch (error: any) {
     console.error("🚨 ROXTOR AI CORE ERROR:", error.message);
-    // Lanzamos error controlado para que el backend responda AI_ENGINE_FAILURE
-    throw new Error(`AI_ENGINE_FAILURE: ${error.message}`);
+    // Retornamos error estructurado para que los módulos lo propaguen
+    return { 
+      error: "AI_ENGINE_FAILURE", 
+      details: error.message,
+      suggested_reply: "Lo siento, el Cerebro de Roxtor tiene una falla técnica. Intenta de nuevo. ⚡"
+    };
   }
 }

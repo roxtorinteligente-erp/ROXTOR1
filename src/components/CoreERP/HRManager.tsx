@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Agent, PayrollPayment, AppSettings, Order } from '../../types';
 import { calculateCommission } from '../../services/hr';
+import { callRoxtorAI } from '../../utils/ai';
 import { 
   Users, 
   Banknote, 
@@ -9,7 +10,9 @@ import {
   Award,
   Calendar,
   CheckCircle2,
-  UserCheck
+  UserCheck,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 interface Props {
@@ -21,10 +24,81 @@ interface Props {
 
 const HRManager: React.FC<Props> = ({ agents, payroll, orders, settings }) => {
   const activeAgents = agents.filter(a => a.id !== 'agent_web');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+
+  const handleAiAnalysis = async () => {
+    setIsAnalyzing(true);
+    setAiAnalysis(null);
+    try {
+      const hrData = activeAgents.map(a => ({
+        name: a.name,
+        role: a.role,
+        sales: orders.filter(o => o.assignedAgentId === a.id).length,
+        attendance: a.attendance?.length || 0
+      }));
+
+      const result = await callRoxtorAI(`Analiza el rendimiento del personal y sugiere incentivos o mejoras: ${JSON.stringify(hrData)}`, undefined, {
+        module: 'report'
+      });
+
+      setAiAnalysis(result);
+    } catch (error) {
+      console.error("AI HR Error:", error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <h2 className="text-3xl font-black text-[#000814] italic uppercase tracking-tighter">Gestión de Personal y Nómina</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-black text-[#000814] italic uppercase tracking-tighter">Gestión de Personal y Nómina</h2>
+        <button 
+          onClick={handleAiAnalysis}
+          disabled={isAnalyzing}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-black uppercase italic text-xs hover:scale-105 transition-all shadow-xl disabled:opacity-50"
+        >
+          {isAnalyzing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+          {isAnalyzing ? 'Evaluando...' : 'Análisis de Rendimiento IA'}
+        </button>
+      </div>
+
+      {aiAnalysis && (
+        <div className="bg-gradient-to-br from-slate-50 to-blue-50 border-4 border-white rounded-[3rem] p-8 shadow-xl animate-in zoom-in duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <Sparkles className="text-purple-600" size={24} />
+            <h3 className="text-xl font-black uppercase italic text-slate-800 tracking-tighter">Insights de Capital Humano</h3>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <p className="text-sm font-bold text-slate-600 leading-relaxed italic">
+                {aiAnalysis.analysis || aiAnalysis.suggested_reply}
+              </p>
+              <div className="bg-white p-4 rounded-2xl border-2 border-slate-100">
+                <p className="text-[10px] font-black text-slate-400 uppercase italic mb-2">Recomendaciones del Especialista</p>
+                <ul className="space-y-2">
+                  {aiAnalysis.recommendations?.map((rec: string, i: number) => (
+                    <li key={i} className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                      <CheckCircle2 size={14} className="text-emerald-500" /> {rec}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 flex flex-col justify-center items-center text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase italic mb-1">Eficiencia Prod.</p>
+                <p className="text-3xl font-black italic text-blue-600">{aiAnalysis.kpis?.production_efficiency || 0}%</p>
+              </div>
+              <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 flex flex-col justify-center items-center text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase italic mb-1">Índice Rentab.</p>
+                <p className="text-3xl font-black italic text-purple-600">{aiAnalysis.kpis?.profitability_index || 0}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {activeAgents.map(agent => {

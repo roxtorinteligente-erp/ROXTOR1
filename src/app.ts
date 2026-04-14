@@ -38,7 +38,12 @@ apiRouter.get("/", (req, res) => {
 
 // 🔹 HEALTH CHECK
 apiRouter.get("/health", (req, res) => {
-  res.json({ status: "ok", time: new Date().toISOString() });
+  res.json({ 
+    status: "ok", 
+    time: new Date().toISOString(),
+    version: "1.0.2-genai-stable",
+    engine: "google-genai-v1"
+  });
 });
 
 // 🔹 TEST IA
@@ -61,7 +66,8 @@ apiRouter.get("/ai/test", async (req, res) => {
     console.error("AI TEST ERROR:", error.message);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: "AI_ENGINE_FAILURE",
+      details: error.message
     });
   }
 });

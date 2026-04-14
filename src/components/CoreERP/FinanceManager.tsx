@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Order, Expense, Debt, AppSettings } from '../../types';
 import { calculateFinancialSummary } from '../../services/finance';
+import { callRoxtorAI } from '../../utils/ai';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,7 +11,10 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   CreditCard,
-  Banknote
+  Banknote,
+  Sparkles,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 
 interface Props {
@@ -25,9 +29,89 @@ const FinanceManager: React.FC<Props> = ({ orders, expenses, debts, settings }) 
   const totalReceivable = orders.reduce((acc, o) => acc + o.restanteUsd, 0);
   const totalPayable = debts.reduce((acc, d) => acc + (d.status === 'pendiente' ? d.totalAmountUsd : 0), 0);
 
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+
+  const handleAiAudit = async () => {
+    setIsAnalyzing(true);
+    setAiAnalysis(null);
+    try {
+      const financialData = {
+        totalIncome,
+        totalExpenses,
+        netProfit,
+        totalReceivable,
+        totalPayable,
+        orderCount: orders.length,
+        expenseCount: expenses.length,
+        debtCount: debts.length
+      };
+
+      const result = await callRoxtorAI(`Realiza una auditoría financiera profunda de estos datos: ${JSON.stringify(financialData)}`, undefined, {
+        module: 'audit'
+      });
+
+      setAiAnalysis(result);
+    } catch (error) {
+      console.error("AI Audit Error:", error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <h2 className="text-3xl font-black text-[#000814] italic uppercase tracking-tighter">Estados Financieros</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-black text-[#000814] italic uppercase tracking-tighter">Estados Financieros</h2>
+        <button 
+          onClick={handleAiAudit}
+          disabled={isAnalyzing}
+          className="flex items-center gap-2 px-6 py-3 bg-[#000814] text-white rounded-2xl font-black uppercase italic text-xs hover:bg-blue-600 transition-all shadow-xl disabled:opacity-50"
+        >
+          {isAnalyzing ? <Loader2 className="animate-spin" size={16} /> : <Sparkles size={16} />}
+          {isAnalyzing ? 'Analizando...' : 'Auditoría IA'}
+        </button>
+      </div>
+
+      {aiAnalysis && (
+        <div className="bg-blue-50 border-4 border-blue-100 rounded-[3rem] p-8 animate-in zoom-in duration-300">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="text-blue-600" size={24} />
+            <h3 className="text-xl font-black uppercase italic text-blue-900 tracking-tighter">Informe del Auditor IA</h3>
+            <span className={`ml-auto px-4 py-1 rounded-full text-[10px] font-black uppercase italic ${
+              aiAnalysis.status === 'Crítico' ? 'bg-rose-100 text-rose-600' : 
+              aiAnalysis.status === 'Alerta' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+            }`}>
+              Status: {aiAnalysis.status || 'Óptimo'}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <p className="text-sm font-bold text-blue-800 leading-relaxed">{aiAnalysis.analysis}</p>
+              <div className="bg-white/50 p-4 rounded-2xl border-2 border-blue-100">
+                <p className="text-[10px] font-black text-blue-400 uppercase italic mb-1">Cuestionamiento Estratégico</p>
+                <p className="text-sm font-black italic text-blue-900">"{aiAnalysis.questioning}"</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-blue-600 text-white p-6 rounded-[2rem] shadow-lg">
+                <p className="text-[10px] font-black text-blue-200 uppercase italic mb-2">Acción de Mejora Sugerida</p>
+                <p className="text-sm font-bold">{aiAnalysis.improvement_action}</p>
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-1 bg-white p-4 rounded-2xl border-2 border-blue-100">
+                  <p className="text-[9px] font-black text-slate-400 uppercase italic">Salud Flujo</p>
+                  <p className="text-xl font-black italic text-blue-600">{aiAnalysis.metrics?.cash_flow_health || 0}%</p>
+                </div>
+                <div className="flex-1 bg-white p-4 rounded-2xl border-2 border-blue-100">
+                  <p className="text-[9px] font-black text-slate-400 uppercase italic">Riesgo Margen</p>
+                  <p className="text-xl font-black italic text-rose-500">{aiAnalysis.metrics?.margin_risk || 'Bajo'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <SummaryCard 

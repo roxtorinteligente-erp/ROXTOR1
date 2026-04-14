@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Order, AppSettings, Agent, Workshop, Product } from '../../types';
 import { createOrder, updateOrderStatus } from '../../services/orders';
 import { handleWorkflowTransition } from '../../services/workflow';
+import { callRoxtorAI } from '../../utils/ai';
 import { 
   Plus, 
   Search, 
@@ -14,7 +15,9 @@ import {
   Palette,
   Hammer,
   Truck,
-  User
+  User,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 
 interface Props {
@@ -38,6 +41,8 @@ const OrderManager: React.FC<Props> = ({
 }) => {
   const [filter, setFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiRadar, setAiRadar] = useState<any>(null);
 
   const filteredOrders = orders.filter(o => {
     const matchesSearch = o.customerName.toLowerCase().includes(filter.toLowerCase()) || 
@@ -45,6 +50,30 @@ const OrderManager: React.FC<Props> = ({
     const matchesStatus = statusFilter === 'todos' || o.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleAiRadar = async () => {
+    setIsAnalyzing(true);
+    setAiRadar(null);
+    try {
+      const ordersSummary = orders.slice(0, 10).map(o => ({
+        number: o.orderNumber,
+        customer: o.customerName,
+        status: o.status,
+        total: o.totalUsd,
+        delivery: o.deliveryDate
+      }));
+
+      const result = await callRoxtorAI(`Analiza el flujo de estas órdenes y detecta cuellos de botella o urgencias: ${JSON.stringify(ordersSummary)}`, undefined, {
+        module: 'radar'
+      });
+
+      setAiRadar(result);
+    } catch (error) {
+      console.error("AI Radar Error:", error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   const handleStatusChange = async (order: Order, newStatus: any) => {
     const updatedOrder = await handleWorkflowTransition(order, newStatus, 'system', settings);
@@ -54,7 +83,17 @@ const OrderManager: React.FC<Props> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h2 className="text-3xl font-black text-[#000814] italic uppercase tracking-tighter">Gestión de Órdenes</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-3xl font-black text-[#000814] italic uppercase tracking-tighter">Gestión de Órdenes</h2>
+          <button 
+            onClick={handleAiRadar}
+            disabled={isAnalyzing}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#000814] to-blue-900 text-white rounded-xl font-black uppercase italic text-[10px] hover:scale-105 transition-all shadow-lg disabled:opacity-50"
+          >
+            {isAnalyzing ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+            {isAnalyzing ? 'Escaneando...' : 'Radar IA'}
+          </button>
+        </div>
         <div className="flex gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -67,7 +106,7 @@ const OrderManager: React.FC<Props> = ({
             />
           </div>
           <select 
-            className="px-4 py-2 bg-white border-2 border-slate-100 rounded-xl outline-none focus:border-[#004ea1]"
+            className="px-4 py-2 bg-white border-2 border-slate-100 rounded-xl outline-none focus:border-[#004ea1] text-xs font-bold"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -80,6 +119,23 @@ const OrderManager: React.FC<Props> = ({
           </select>
         </div>
       </div>
+
+      {aiRadar && (
+        <div className="bg-white border-4 border-blue-50 rounded-[2.5rem] p-6 shadow-xl animate-in slide-in-from-left-4 duration-300">
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="text-blue-600" size={20} />
+            <h3 className="text-sm font-black uppercase italic text-blue-900">Análisis de Radar IA</h3>
+          </div>
+          <p className="text-xs font-bold text-slate-600 italic leading-relaxed mb-4">
+            {aiRadar.suggested_reply}
+          </p>
+          {aiRadar.entities?.urgent && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase italic w-fit">
+              <AlertCircle size={14} /> Alerta de Urgencia Detectada
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredOrders.map(order => (
