@@ -41,9 +41,9 @@ apiRouter.get("/health", (req, res) => {
   res.json({ 
     status: "ok", 
     time: new Date().toISOString(),
-    version: "1.0.4-genai-stable-20260414",
+    version: "1.0.5-genai-stable-20260414",
     engine: "google-genai-v1",
-    build_time: "2026-04-14T23:05:00Z"
+    build_time: "2026-04-14T23:12:00Z"
   });
 });
 
@@ -74,7 +74,7 @@ apiRouter.get("/ai/test", async (req, res) => {
 });
 
 // 🔹 ANALYZE (CORE IA)
-apiRouter.get("/ai/analyze", (req, res) => {
+apiRouter.get(["/ai/analyze", "/ai/analize"], (req, res) => {
   res.json({ 
     message: "ROXTOR ANALYZE ENDPOINT", 
     status: "active",
@@ -82,7 +82,7 @@ apiRouter.get("/ai/analyze", (req, res) => {
   });
 });
 
-apiRouter.post("/ai/analyze", async (req, res) => {
+apiRouter.post(["/ai/analyze", "/ai/analize"], async (req, res) => {
   try {
     const { prompt, image, catalog, module } = req.body;
 
