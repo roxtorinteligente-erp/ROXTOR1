@@ -272,12 +272,15 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
             const worksheet = workbook.Sheets[firstSheetName];
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
             
+            console.log("[Inventory] Excel JSON Data:", jsonData);
             prompt += `\n\nDATOS EXTRAÍDOS DEL EXCEL:\n${JSON.stringify(jsonData, null, 2)}`;
             // No enviamos "attachment" (imagen) si es Excel, enviamos los datos en el prompt
           } else {
             attachment = reader.result as string;
+            console.log("[Inventory] Image/PDF detected, size:", attachment.length);
           }
 
+          console.log("[Inventory] Calling AI with prompt length:", prompt.length);
           // Ejecución a través del puente seguro
           const result = await callRoxtorAI(prompt, attachment, { module: 'inventory' });
           

@@ -1,86 +1,59 @@
-
-import { Order, OrderStatus, AppSettings, Message } from '../types';
-import { updateOrderStatus } from './orders';
-import { sendWhatsappMessage } from './whatsappService';
-
-export type ERPAction = 
-  | { type: 'CREATE_ORDER'; data: any }
-  | { type: 'UPDATE_STATUS'; data: { orderId: string; status: OrderStatus; agentId: string } }
-  | { type: 'SEND_NOTIFICATION'; data: { phone: string; message: string; orderNumber?: string } }
-  | { type: 'ASSIGN_WORKSHOP'; data: { orderId: string; workshopId: string } }
-  | { type: 'ALERT_LOW_STOCK'; data: { productId: string; currentStock: number } };
-
-export const executeAction = async (
-  action: ERPAction,
-  context: { 
-    orders: Order[]; 
-    setOrders: (orders: Order[]) => void;
-    settings: AppSettings;
-    currentAgentId?: string;
-  }
-) => {
-  const { orders, setOrders, settings, currentAgentId } = context;
-
-  switch (action.type) {
-    case 'UPDATE_STATUS': {
-      const { orderId, status, agentId } = action.data;
-      const order = orders.find(o => o.id === orderId);
-      if (order) {
-        const updatedOrder = updateOrderStatus(order, status, agentId);
-        setOrders(orders.map(o => o.id === orderId ? updatedOrder : o));
-        
-        // Auto-notification on status change
-        if (settings.whatsappConfig?.enabled) {
-          await sendWhatsappMessage({ to: order.customerPhone, body: `Hola ${order.customerName}, tu orden ${order.orderNumber} ha pasado al estado: ${status}.` });
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ROXTOR - ERP Resiliente</title>
+    
+    <meta name="theme-color" content="#000814">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ROXTOR">
+    
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/000814/white?text=R&font=playfair-display">
+    <link rel="manifest" href="/manifest.json">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden;
         }
+        .glass { 
+            background: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(10px); 
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes pulse-red {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .animate-pulse-red { animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+
+<body class="bg-[#f8fafc] text-slate-900 min-h-screen select-none">
+    
+    <div id="root"></div>
+
+    <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          // Busca el archivo sw.js en la raíz de la carpeta /public al desplegar
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('ROXTOR PWA: Modo offline en espera de configuración final', err);
+          });
+        });
       }
-      break;
-    }
+    </script>
 
-    case 'SEND_NOTIFICATION': {
-      const { phone, message } = action.data;
-      if (settings.whatsappConfig?.enabled) {
-        await sendWhatsappMessage({ to: phone, body: message });
-      } else {
-        console.log(`[Simulated WhatsApp to ${phone}]: ${message}`);
-      }
-      break;
-    }
-
-    case 'CREATE_ORDER': {
-      // This would be called by the AI or a manual form
-      // The actual creation logic is in orders.ts, but this could trigger post-creation flows
-      break;
-    }
-
-    default:
-      console.warn(`Acción no reconocida: ${(action as any).type}`);
-  }
-};
-
-export const handleWorkflowTransition = async (
-  order: Order,
-  nextStatus: OrderStatus,
-  agentId: string,
-  settings: AppSettings
-) => {
-  // 1. Update status
-  const updatedOrder = updateOrderStatus(order, nextStatus, agentId);
-  
-  // 2. Logic based on status
-  switch (nextStatus) {
-    case 'diseño':
-      console.log(`Orden ${order.orderNumber} en fase de DISEÑO.`);
-      break;
-    case 'taller':
-      console.log(`Orden ${order.orderNumber} enviada a TALLER.`);
-      break;
-    case 'completado':
-      // Notify client
-      const message = `¡Buenas noticias! Tu pedido ${order.orderNumber} está LISTO para ser retirado. Te esperamos en ${settings.businessName}.`;
-      await sendWhatsappMessage({ to: order.customerPhone, body: message });
-      break;
-  }
-
-  return updatedOrder;
-};
+</body>
+</html>

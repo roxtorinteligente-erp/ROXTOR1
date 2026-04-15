@@ -1,47 +1,20 @@
-{
-  "name": "roxtor-intelligent-erp",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "tsx server.ts",
-    "start": "tsx server.ts",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "tsc --noEmit"
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   },
-  "dependencies": {
-    "@google/genai": "^1.50.1",
-    "@google/generative-ai": "^0.24.1",
-    "@supabase/supabase-js": "^2.103.0",
-    "@tailwindcss/vite": "^4.2.2",
-    "@types/uuid": "^10.0.0",
-    "axios": "^1.15.0",
-    "date-fns": "^4.1.0",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
-    "jspdf-autotable": "^5.0.7",
-    "lucide-react": "^0.564.0",
-    "motion": "^12.38.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "react-router-dom": "^7.14.0",
-    "recharts": "^3.8.1",
-    "serverless-http": "^4.0.0",
-    "tailwindcss": "^4.2.2",
-    "tsx": "^4.21.0",
-    "uuid": "^13.0.0",
-    "xlsx": "^0.18.5"
+  server: {
+    port: 3000,
   },
-  "devDependencies": {
-    "@types/express": "^5.0.6",
-    "@types/node": "^20.11.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.5"
-  }
-}
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+  },
+});
