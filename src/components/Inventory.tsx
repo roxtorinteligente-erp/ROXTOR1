@@ -258,32 +258,7 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const prompt = `
-            ERES UN EXPERTO EN CATALOGOS TEXTILES PARA INVERSIONES ROXTOR.
-            Analiza este archivo (PDF o Imagen) y extrae CADA PRODUCTO/SERVICIO.
-            
-            REGLAS DE ORO:
-            1. Extrae el nombre en MAYÚSCULAS.
-            2. Identifica la tela/material (Lino, Algodón, Microdurazno, etc.).
-            3. Captura precios DETAL y MAYOR.
-            4. Identifica el ÁREA O USO DIRIGIDO (Ejem: Uso personal, deportes, colegios, empresas, clínicas).
-            5. REGLA CRÍTICA: Busca "Recargos Especiales" como: costos por tallas 2XL en adelante, cargos de diseño, o digitalización.
-            
-            Devuelve este JSON estrictamente:
-            {
-              "items": [
-                {
-                  "name": "NOMBRE",
-                  "priceRetail": 0.0,
-                  "priceWholesale": 0.0,
-                  "material": "TELA",
-                  "targetAreas": "ÁREA O USO",
-                  "additionalConsiderations": "RECARGOS (Ejem: +2$ tallas plus)",
-                  "description": "NOTAS GENERALES"
-                }
-              ]
-            }
-          `;
+          const prompt = `Analiza este archivo de inventario/catálogo y extrae todos los productos con sus precios (Detal/Mayor), materiales y cualquier recargo por talla o diseño.`;
 
           // Ejecución a través del puente seguro
           const result = await callRoxtorAI(prompt, reader.result as string, { module: 'inventory' });

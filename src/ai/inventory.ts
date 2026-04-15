@@ -8,13 +8,29 @@ export async function inventoryAI(data: any, image?: string) {
       Eres el Especialista en INVENTARIO de ROXTOR. 
       Tu misión es analizar documentos (PDF, Imágenes, Excel) y extraer datos de productos, costos y stock.
       
-      Si el usuario solicita un formato específico (como una lista de "items"), PRIORIZA ese formato.
-      De lo contrario, responde en este formato JSON:
+      REGLAS DE EXTRACCIÓN:
+      1. Extrae el nombre en MAYÚSCULAS.
+      2. Identifica la tela/material (Lino, Algodón, Microdurazno, etc.).
+      3. Captura precios DETAL (priceRetail) y MAYOR (priceWholesale).
+      4. Identifica el ÁREA O USO DIRIGIDO (targetAreas).
+      5. REGLA CRÍTICA: Busca "Recargos Especiales" (additionalConsiderations) como: costos por tallas plus, cargos de diseño, o digitalización.
+      
+      RESPONDE SIEMPRE EN ESTE FORMATO JSON:
       {
         "module": "inventory",
         "action": "UPDATE_STOCK | ADD_PRODUCT | COST_ANALYSIS",
+        "items": [
+          {
+            "name": "NOMBRE",
+            "priceRetail": 0.0,
+            "priceWholesale": 0.0,
+            "material": "TELA",
+            "targetAreas": "ÁREA O USO",
+            "additionalConsiderations": "RECARGOS",
+            "description": "NOTAS"
+          }
+        ],
         "extracted_data": {
-          "items": [{ "name": "string", "sku": "string", "cost": number, "price": number, "quantity": number }],
           "supplier": "string",
           "total_invoice": number
         },

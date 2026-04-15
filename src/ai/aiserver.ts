@@ -22,14 +22,10 @@ export async function runAI(
     
     const parts: any[] = [{ text: prompt }];
 
-    // Si es un PDF o el prompt es muy largo, usamos un modelo Pro
-    let selectedModel = modelName;
-    if (mimeType === "application/pdf" || prompt.length > 2000) {
-      selectedModel = "gemini-3.1-pro-preview";
-    }
+    // Usamos gemini-flash-latest por defecto ya que es el más estable y soporta multimodal (PDF/Imágenes)
+    const selectedModel = "gemini-flash-latest";
 
     if (image) {
-      console.log(`[AI] Processing attachment: ${mimeType} (${image.length} bytes)`);
       // Limpieza de base64 si viene con el prefijo data:image/...
       const base64Data = image.includes("base64,") 
         ? image.split("base64,")[1] 
@@ -41,6 +37,8 @@ export async function runAI(
         const match = image.match(/^data:([^;]+);base64,/);
         if (match) finalMimeType = match[1];
       }
+
+      console.log(`[AI] Processing attachment: ${finalMimeType} (${base64Data.length} bytes)`);
 
       parts.push({
         inlineData: {
@@ -92,11 +90,19 @@ export async function runAI(
     }
   } catch (error: any) {
     console.error("🚨 ROXTOR AI CORE ERROR:", error.message);
-    // Retornamos error estructurado para que los módulos lo propaguen
+    
+    // Si es un error de cuota o de seguridad, lo especificamos
+    let userMessage = "Lo siento, el Cerebro de Roxtor tiene una falla técnica. Intenta de nuevo. ⚡";
+    if (error.message?.includes("429") || error.message?.includes("quota")) {
+      userMessage = "Se ha alcanzado el límite de solicitudes de IA por hoy. Por favor, intenta más tarde.";
+    } else if (error.message?.includes("400")) {
+      userMessage = "Error en el formato del archivo o mensaje (400). Prueba con un archivo más pequeño o una imagen clara.";
+    }
+
     return { 
       error: "AI_ENGINE_FAILURE", 
       details: error.message,
-      suggested_reply: "Lo siento, el Cerebro de Roxtor tiene una falla técnica. Intenta de nuevo. ⚡"
+      suggested_reply: userMessage
     };
   }
 }
