@@ -1,25 +1,26 @@
--- SQL para configurar la tabla de sincronización de ROXTOR ERP en Supabase
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
--- 1. Crear la tabla roxtor_sync
-CREATE TABLE IF NOT EXISTS roxtor_sync (
-  id BIGSERIAL PRIMARY KEY,
-  store_id TEXT NOT NULL UNIQUE,
-  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-  last_sync TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+let supabaseInstance: SupabaseClient | null = null;
 
--- 2. Habilitar Row Level Security (RLS)
-ALTER TABLE roxtor_sync ENABLE ROW LEVEL SECURITY;
+export const getSupabase = (): SupabaseClient | null => {
+  if (supabaseInstance) return supabaseInstance;
 
--- 3. Crear política para permitir acceso total (Para prototipos)
--- NOTA: En producción, deberías restringir esto por autenticación.
-CREATE POLICY "Permitir todo a roxtor_sync" ON roxtor_sync
-  FOR ALL
-  USING (true)
-  WITH CHECK (true);
+  const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
--- 4. Insertar registro inicial para la sede principal si no existe
-INSERT INTO roxtor_sync (store_id, payload)
-VALUES ('global_master', '{}')
-ON CONFLICT (store_id) DO NOTHING;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn("⚠️ Supabase: VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY no están configuradas.");
+    return null;
+  }
+
+  try {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+    return supabaseInstance;
+  } catch (error) {
+    console.error("❌ Error al inicializar Supabase:", error);
+    return null;
+  }
+};
+
+// Exportamos una instancia por defecto para compatibilidad, pero se recomienda usar getSupabase()
+export const supabase = getSupabase();
