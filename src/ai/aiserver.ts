@@ -6,38 +6,33 @@ dotenv.config();
 /**
  * ROXTOR AI CORE ENGINE
  * Centralized motor for all AI operations in the ERP.
- * Optimized for @google/genai SDK and Netlify Functions.
+ * Optimized for @google/genai SDK.
  */
 
 export async function runAI(
   prompt: string,
   systemInstruction: string,
   image?: string,
-  mimeType: string = "image/jpeg",
-  modelName: string = "gemini-flash-latest"
+  mimeType: string = "image/jpeg"
 ) {
   try {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is missing in environment variables");
     }
 
-    // Inicialización según estándar @google/genai
+    // Inicialización específica para @google/genai
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
+    // Usamos gemini-1.5-flash por defecto
+    const selectedModel = "gemini-1.5-flash";
+    
     const parts: any[] = [{ text: prompt }];
-
-    // Usamos gemini-flash-latest por defecto ya que es el más estable y soporta multimodal (PDF/Imágenes)
-    const selectedModel = "gemini-flash-latest";
 
     if (image) {
       // Limpieza de base64 si viene con el prefijo data:image/...
       const base64Data = image.includes("base64,") 
         ? image.split("base64,")[1] 
         : image;
-      
-      if (!base64Data) {
-        console.warn("[AI] Image/File data is empty after base64 split");
-      }
       
       // Detección dinámica de mimeType
       let finalMimeType = mimeType;
@@ -58,13 +53,13 @@ export async function runAI(
 
     console.log(`[AI] Calling model: ${selectedModel} with prompt length: ${prompt.length}`);
 
-    // Llamada a la API moderna de Google GenAI
+    // Llamada a la API según el patrón de @google/genai
     const response = await ai.models.generateContent({
       model: selectedModel,
-      contents: { parts },
+      contents: [{ role: "user", parts }],
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.1, // Precisión máxima para JSON
+        temperature: 0.1,
         topP: 0.95,
         topK: 64,
         responseMimeType: "application/json",
@@ -72,11 +67,11 @@ export async function runAI(
     });
 
     if (!response) {
-      throw new Error("La IA no devolvió ninguna respuesta (response is null/undefined).");
+      throw new Error("La IA no devolvió ninguna respuesta.");
     }
 
-    // En @google/genai, .text es una propiedad, no un método
-    let text = response.text || "";
+    // En @google/genai, .text es una propiedad directa de la respuesta
+    let text = (response as any).text || "";
     text = text.trim();
 
     if (!text) {

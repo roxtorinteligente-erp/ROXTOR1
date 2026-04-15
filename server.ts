@@ -5,8 +5,8 @@ import app from "./src/app";
 
 const PORT = 3000;
 
-async function startDevServer() {
-  // Solo para desarrollo local (tsx server.ts)
+async function startServer() {
+  // Middleware de Vite para desarrollo
   if (process.env.NODE_ENV !== "production" && !process.env.NETLIFY) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -14,17 +14,25 @@ async function startDevServer() {
     });
 
     // Usar el middleware de vite para manejar el frontend
-    // Importante: Esto debe ir DESPUÉS de las rutas de la API si queremos que la API tenga prioridad
-    // Pero en este caso app ya tiene las rutas de la API montadas.
     app.use(vite.middlewares);
-
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`🚀 Local dev server running on http://localhost:${PORT}`);
-      console.log(`📡 API Health check: http://localhost:${PORT}/api/health`);
+  } else {
+    // Modo Producción: Servir archivos estáticos desde dist
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    
+    // Fallback para SPA (manejar rutas de React)
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
 }
 
-startDevServer();
+startServer();
 
 export { app };

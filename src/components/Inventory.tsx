@@ -5,6 +5,7 @@ import { ROXTOR_SYSTEM_INSTRUCTIONS } from '../constants/systemInstructions';
 import { uploadToSupabaseStorage, compressImage } from '../utils/storage';
 import { callRoxtorAI } from '../utils/ai';
 import { exportToCSV } from '../utils/csvExport';
+import * as XLSX from 'xlsx';
 import { 
   Plus, 
   Trash2, 
@@ -255,13 +256,30 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
     setScanProgress(5); 
     
     try {
+      const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv');
+      
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const prompt = `Analiza este archivo de inventario/catálogo y extrae todos los productos con sus precios (Detal/Mayor), materiales y cualquier recargo por talla o diseño.`;
+          let prompt = `Analiza este archivo de inventario/catálogo y extrae todos los productos con sus precios (Detal/Mayor), materiales y cualquier recargo por talla o diseño.`;
+          let attachment: string | undefined = undefined;
+
+          if (isExcel) {
+            setScanStep(2); // Identificando patrones...
+            const data = new Uint8Array(reader.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+            
+            prompt += `\n\nDATOS EXTRAÍDOS DEL EXCEL:\n${JSON.stringify(jsonData, null, 2)}`;
+            // No enviamos "attachment" (imagen) si es Excel, enviamos los datos en el prompt
+          } else {
+            attachment = reader.result as string;
+          }
 
           // Ejecución a través del puente seguro
-          const result = await callRoxtorAI(prompt, reader.result as string, { module: 'inventory' });
+          const result = await callRoxtorAI(prompt, attachment, { module: 'inventory' });
           
           if (result.error) {
             throw new Error(result.suggested_reply || "Error en el análisis de IA");
@@ -282,11 +300,17 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
           if (importInputRef.current) importInputRef.current.value = '';
         }
       };
+
       reader.onerror = () => {
         alert("Error al leer el archivo.");
         setIsScanning(false);
       };
-      reader.readAsDataURL(file);
+
+      if (isExcel) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsDataURL(file);
+      }
     } catch (err) {
       console.error("Setup Error:", err);
       setIsScanning(false);

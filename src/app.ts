@@ -9,6 +9,8 @@ import { reportAI } from "./ai/report";
 import { detectModule } from "./ai/detectModule";
 import { runAI } from "./ai/aiserver";
 
+import path from "path";
+
 dotenv.config();
 
 // 🔐 Helper seguro para URLs
@@ -24,6 +26,40 @@ function safeURL(url?: string) {
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));
+
+// Servir archivos estáticos críticos para PWA (sw.js, manifest.json)
+// Esto evita que el API Router o el SPA Fallback los sirvan como text/html
+app.get("/sw.js", (req, res) => {
+  res.setHeader("Content-Type", "application/javascript");
+  res.sendFile(path.join(process.cwd(), "public", "sw.js"));
+});
+
+app.get("/manifest.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.sendFile(path.join(process.cwd(), "public", "manifest.json"));
+});
+
+// Manejador de errores para JSON malformado o muy grande
+app.use((err: any, req: any, res: any, next: any) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    console.error("🚨 JSON Error:", err.message);
+    return res.status(400).json({ 
+      error: "Invalid JSON payload", 
+      details: err.message,
+      suggestion: "El cuerpo de la petición es demasiado grande o no es un JSON válido."
+    });
+  }
+  next();
+});
+
+// Middleware para loguear tamaño de peticiones
+app.use((req, res, next) => {
+  if (req.method === 'POST') {
+    const size = JSON.stringify(req.body).length;
+    console.log(`[SERVER] POST ${req.path} - Body Size: ${(size / 1024 / 1024).toFixed(2)} MB`);
+  }
+  next();
+});
 
 // Router para agrupar endpoints de la API
 const apiRouter = express.Router();
@@ -41,9 +77,10 @@ apiRouter.get("/health", (req, res) => {
   res.json({ 
     status: "ok", 
     time: new Date().toISOString(),
-    version: "1.0.6-genai-stable-20260414",
-    engine: "google-genai-v1",
-    build_time: "2026-04-14T23:18:00Z"
+    version: "1.0.7-genai-stable-20260415",
+    engine: "google-genai-v1-flash",
+    features: ["radar", "inventory", "audit", "report", "excel_parsing", "pdf_vision"],
+    build_time: "2026-04-15T19:05:00Z"
   });
 });
 
@@ -70,6 +107,45 @@ apiRouter.get("/ai/test", async (req, res) => {
       error: "AI_ENGINE_FAILURE",
       details: error.message
     });
+  }
+});
+
+// 🔹 CONFIG (SUPABASE & OTHERS)
+apiRouter.get("/config", (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    supabaseKey: process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY,
+    whatsappEnabled: !!process.env.WHATSAPP_ACCESS_TOKEN
+  });
+});
+
+// 🔹 SYNC PROXY (Para evitar problemas de CORS/Red en el cliente)
+apiRouter.post("/sync-proxy", async (req, res) => {
+  try {
+    const { method, url, headers, body } = req.body;
+    
+    if (!url) return res.status(400).json({ error: "Missing URL" });
+
+    const response = await fetch(url, {
+      method: method || 'GET',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json'
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      const data = await response.json();
+      res.status(response.status).json(data);
+    } else {
+      const text = await response.text();
+      res.status(response.status).send(text);
+    }
+  } catch (error: any) {
+    console.error("PROXY ERROR:", error.message);
+    res.status(500).json({ error: "Proxy failure", details: error.message });
   }
 });
 

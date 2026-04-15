@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "start": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/genai": "^1.49.0",
+    "@google/genai": "^1.50.1",
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.103.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/uuid": "^10.0.0",

@@ -41,8 +41,8 @@ export async function inventoryAI(data: any, image?: string) {
 
     const prompt = typeof data === 'string' ? data : "Analiza este documento de inventario y extrae la información relevante.";
 
-    // Usamos gemini-3.1-pro-preview para análisis de documentos complejos (PDFs)
-    const result = await runAI(prompt, systemPrompt, image, "application/pdf");
+    // Usamos gemini-1.5-flash para análisis de documentos y fotos
+    const result = await runAI(prompt, systemPrompt, image);
 
     return result;
 

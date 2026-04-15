@@ -402,7 +402,16 @@ const App: React.FC = () => {
           lastUpdate: Date.now()
         };
 
-        const response = await performFetch(`${baseUrl}/rest/v1/roxtor_sync`, {
+        const payloadStr = JSON.stringify({
+          store_id: 'global_master',
+          payload: payload,
+          last_sync: new Date().toISOString()
+        });
+
+        console.log(`[SYNC] Pushing payload size: ${(payloadStr.length / 1024).toFixed(2)} KB`);
+
+        // Usamos on_conflict=store_id para que PostgREST sepa qué columna usar para el upsert
+        const response = await performFetch(`${baseUrl}/rest/v1/roxtor_sync?on_conflict=store_id`, {
           method: 'POST',
           headers: { 
             'apikey': apiKey, 
@@ -410,11 +419,7 @@ const App: React.FC = () => {
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates'
           },
-          body: JSON.stringify({
-            store_id: 'global_master',
-            payload: payload,
-            last_sync: new Date().toISOString()
-          }),
+          body: payloadStr,
           signal: controller.signal
         });
         clearTimeout(timeoutId);
