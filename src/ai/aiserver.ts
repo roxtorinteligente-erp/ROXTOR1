@@ -17,6 +17,10 @@ export async function runAI(
   modelName: string = "gemini-flash-latest"
 ) {
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is missing in environment variables");
+    }
+
     // Inicialización según estándar @google/genai
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     
@@ -30,6 +34,10 @@ export async function runAI(
       const base64Data = image.includes("base64,") 
         ? image.split("base64,")[1] 
         : image;
+      
+      if (!base64Data) {
+        console.warn("[AI] Image/File data is empty after base64 split");
+      }
       
       // Detección dinámica de mimeType
       let finalMimeType = mimeType;
@@ -48,7 +56,7 @@ export async function runAI(
       });
     }
 
-    console.log(`[AI] Calling model: ${selectedModel}`);
+    console.log(`[AI] Calling model: ${selectedModel} with prompt length: ${prompt.length}`);
 
     // Llamada a la API moderna de Google GenAI
     const response = await ai.models.generateContent({
@@ -63,9 +71,17 @@ export async function runAI(
       },
     });
 
+    if (!response) {
+      throw new Error("La IA no devolvió ninguna respuesta (response is null/undefined).");
+    }
+
     // En @google/genai, .text es una propiedad, no un método
     let text = response.text || "";
     text = text.trim();
+
+    if (!text) {
+      console.warn("[AI] Response text is empty");
+    }
 
     // Limpieza de bloques de código Markdown si el modelo los incluye
     text = text.replace(/```json\s?|```\s?/g, "").trim();
@@ -74,7 +90,7 @@ export async function runAI(
     try {
       return JSON.parse(text);
     } catch (e) {
-      console.warn("⚠️ AI returned non-structured text, attempting to extract JSON block:", text);
+      console.warn("⚠️ AI returned non-structured text, attempting to extract JSON block:", text.substring(0, 100));
       
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -97,6 +113,8 @@ export async function runAI(
       userMessage = "Se ha alcanzado el límite de solicitudes de IA por hoy. Por favor, intenta más tarde.";
     } else if (error.message?.includes("400")) {
       userMessage = "Error en el formato del archivo o mensaje (400). Prueba con un archivo más pequeño o una imagen clara.";
+    } else if (error.message?.includes("API_KEY")) {
+      userMessage = "Error de configuración: Clave de API no válida o ausente.";
     }
 
     return { 

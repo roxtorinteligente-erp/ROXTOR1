@@ -89,27 +89,55 @@ apiRouter.post(["/ai/analyze", "/ai/analize"], async (req, res) => {
     console.log(`[API] Analyze request - Module: ${module || 'radar'} - Has Image: ${!!image}`);
 
     if (!prompt) {
-      return res.status(400).json({ error: "Missing prompt" });
+      console.warn("[API] Missing prompt in request body");
+      return res.status(400).json({ 
+        error: "Missing prompt",
+        suggestion: "Asegúrate de enviar un campo 'prompt' en el cuerpo de la petición."
+      });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("[API] GEMINI_API_KEY is not configured");
+      return res.status(500).json({
+        error: "CONFIGURATION_ERROR",
+        details: "La clave de API de Gemini no está configurada en el servidor."
+      });
     }
 
     // Si se especifica un módulo, usamos el correspondiente
     let result;
-    if (module === 'audit') {
-      result = await auditAI(prompt, image);
-    } else if (module === 'inventory') {
-      result = await inventoryAI(prompt, image);
-    } else if (module === 'report') {
-      result = await reportAI(prompt, image);
-    } else {
-      // Por defecto usamos radarAI
-      result = await radarAI(prompt, image, catalog);
+    try {
+      if (module === 'audit') {
+        result = await auditAI(prompt, image);
+      } else if (module === 'inventory') {
+        result = await inventoryAI(prompt, image);
+      } else if (module === 'report') {
+        result = await reportAI(prompt, image);
+      } else {
+        // Por defecto usamos radarAI
+        result = await radarAI(prompt, image, catalog);
+      }
+    } catch (aiError: any) {
+      console.error(`[API] AI Module Error (${module || 'radar'}):`, aiError.message);
+      return res.status(500).json({
+        error: "AI_MODULE_CRASH",
+        details: aiError.message,
+        suggested_reply: "Hubo un error crítico procesando tu solicitud. Por favor, intenta de nuevo."
+      });
+    }
+
+    if (result?.error === "AI_ENGINE_FAILURE") {
+      console.warn("[API] AI Engine returned failure:", result.details);
+      // Si el motor de IA falló (ej: 400 de Gemini), devolvemos un 400 o 500 según corresponda
+      const status = result.details?.includes("400") ? 400 : 500;
+      return res.status(status).json(result);
     }
 
     res.json(result);
   } catch (error: any) {
-    console.error("ANALYZE ERROR:", error.message);
+    console.error("ANALYZE GLOBAL ERROR:", error.message);
     res.status(500).json({
-      error: "AI_ENGINE_FAILURE",
+      error: "INTERNAL_SERVER_ERROR",
       details: error.message,
     });
   }
