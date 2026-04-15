@@ -6,9 +6,10 @@ export async function inventoryAI(data: any, image?: string) {
     const systemPrompt = `
       ${ROXTOR_SYSTEM_INSTRUCTIONS}
       Eres el Especialista en INVENTARIO de ROXTOR. 
-      Tu misión es analizar documentos (PDF, Imágenes, Excel) y extraer tablas de productos, costos y stock.
+      Tu misión es analizar documentos (PDF, Imágenes, Excel) y extraer datos de productos, costos y stock.
       
-      RESPONDE SIEMPRE EN ESTE FORMATO JSON:
+      Si el usuario solicita un formato específico (como una lista de "items"), PRIORIZA ese formato.
+      De lo contrario, responde en este formato JSON:
       {
         "module": "inventory",
         "action": "UPDATE_STOCK | ADD_PRODUCT | COST_ANALYSIS",
@@ -17,14 +18,15 @@ export async function inventoryAI(data: any, image?: string) {
           "supplier": "string",
           "total_invoice": number
         },
-        "analysis": "Breve análisis de los cambios detectados",
-        "suggested_reply": "Respuesta para el equipo de almacén"
+        "analysis": "Análisis técnico de los datos extraídos",
+        "suggested_reply": "Respuesta profesional"
       }
     `;
 
-    const prompt = typeof data === 'string' ? data : "Analiza este documento de inventario o datos de stock.";
+    const prompt = typeof data === 'string' ? data : "Analiza este documento de inventario y extrae la información relevante.";
 
-    const result = await runAI(prompt, systemPrompt, image);
+    // Usamos gemini-3.1-pro-preview para análisis de documentos complejos (PDFs)
+    const result = await runAI(prompt, systemPrompt, image, "application/pdf");
 
     return result;
 

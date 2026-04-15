@@ -13,6 +13,12 @@ export async function radarAI(message: string, image?: string, catalog?: any[]) 
       
       ${catalogContext}
       
+      REGLAS PARA LA RESPUESTA (suggested_reply):
+      1. TONO: Profesional, ejecutivo y entusiasta.
+      2. BREVEDAD: Máximo 2-3 oraciones. Ve directo al grano.
+      3. UPSELLING: Siempre sugiere un valor agregado sutil (ej: "Podemos añadir bordado premium por solo $2 adicionales", "Si llevas 12 piezas, aplicamos precio al mayor", "Nuestra tela Microdurazno es ideal para este diseño").
+      4. CIERRE: Siempre termina con un llamado a la acción corto.
+      
       RESPONDE SIEMPRE EN ESTE FORMATO JSON:
       {
         "module": "radar | inventory | audit | report",
@@ -23,9 +29,14 @@ export async function radarAI(message: string, image?: string, catalog?: any[]) 
           "customer_phone": "string",
           "items": [{ "name": "string", "quantity": number, "priceUsd": number }],
           "total_amount": number,
-          "urgent": boolean
+          "urgent": boolean,
+          "meta_template": {
+            "name": "string",
+            "language": "es",
+            "components": []
+          }
         },
-        "suggested_reply": "Respuesta profesional para el cliente"
+        "suggested_reply": "Respuesta profesional, corta y con upsell"
       }
     `;
 

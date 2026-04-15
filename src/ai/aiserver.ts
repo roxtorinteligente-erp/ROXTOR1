@@ -13,7 +13,8 @@ export async function runAI(
   prompt: string,
   systemInstruction: string,
   image?: string,
-  mimeType: string = "image/jpeg"
+  mimeType: string = "image/jpeg",
+  modelName: string = "gemini-flash-latest"
 ) {
   try {
     // Inicialización según estándar @google/genai
@@ -21,7 +22,14 @@ export async function runAI(
     
     const parts: any[] = [{ text: prompt }];
 
+    // Si es un PDF o el prompt es muy largo, usamos un modelo Pro
+    let selectedModel = modelName;
+    if (mimeType === "application/pdf" || prompt.length > 2000) {
+      selectedModel = "gemini-3.1-pro-preview";
+    }
+
     if (image) {
+      console.log(`[AI] Processing attachment: ${mimeType} (${image.length} bytes)`);
       // Limpieza de base64 si viene con el prefijo data:image/...
       const base64Data = image.includes("base64,") 
         ? image.split("base64,")[1] 
@@ -42,9 +50,11 @@ export async function runAI(
       });
     }
 
+    console.log(`[AI] Calling model: ${selectedModel}`);
+
     // Llamada a la API moderna de Google GenAI
     const response = await ai.models.generateContent({
-      model: "gemini-flash-latest",
+      model: selectedModel,
       contents: { parts },
       config: {
         systemInstruction: systemInstruction,

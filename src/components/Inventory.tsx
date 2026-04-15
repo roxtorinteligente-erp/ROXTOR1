@@ -245,6 +245,12 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Límite de seguridad para archivos (15MB)
+    if (file.size > 15 * 1024 * 1024) {
+      alert("El archivo es demasiado grande (máximo 15MB). Por favor, intenta con un archivo más pequeño o una imagen.");
+      return;
+    }
+
     setIsScanning(true);
     setScanProgress(5); 
     
@@ -252,8 +258,6 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const base64Data = (reader.result as string).split(',')[1];
-          
           const prompt = `
             ERES UN EXPERTO EN CATALOGOS TEXTILES PARA INVERSIONES ROXTOR.
             Analiza este archivo (PDF o Imagen) y extrae CADA PRODUCTO/SERVICIO.
@@ -288,11 +292,16 @@ const Inventory: React.FC<Props> = ({ products, setProducts, currentStoreId, set
             throw new Error(result.suggested_reply || "Error en el análisis de IA");
           }
 
-          setImportResults(result.items || []);
+          if (!result.items && result.extracted_data?.items) {
+            setImportResults(result.extracted_data.items);
+          } else {
+            setImportResults(result.items || []);
+          }
+          
           setIsImportModalOpen(true);
-        } catch (err) {
+        } catch (err: any) {
           console.error("AI Import Error:", err);
-          alert("Error procesando catálogo con la IA. Verifique su conexión.");
+          alert(`Error procesando catálogo: ${err.message || "Verifique su conexión"}`);
         } finally {
           setIsScanning(false);
           if (importInputRef.current) importInputRef.current.value = '';

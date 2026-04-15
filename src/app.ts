@@ -41,9 +41,9 @@ apiRouter.get("/health", (req, res) => {
   res.json({ 
     status: "ok", 
     time: new Date().toISOString(),
-    version: "1.0.5-genai-stable-20260414",
+    version: "1.0.6-genai-stable-20260414",
     engine: "google-genai-v1",
-    build_time: "2026-04-14T23:12:00Z"
+    build_time: "2026-04-14T23:18:00Z"
   });
 });
 
@@ -85,6 +85,8 @@ apiRouter.get(["/ai/analyze", "/ai/analize"], (req, res) => {
 apiRouter.post(["/ai/analyze", "/ai/analize"], async (req, res) => {
   try {
     const { prompt, image, catalog, module } = req.body;
+
+    console.log(`[API] Analyze request - Module: ${module || 'radar'} - Has Image: ${!!image}`);
 
     if (!prompt) {
       return res.status(400).json({ error: "Missing prompt" });
@@ -148,7 +150,7 @@ apiRouter.post("/webhook", async (req, res) => {
 
       const ai = await radarAI(text);
 
-      if (ai?.suggested_reply) {
+      if (ai?.suggested_reply || ai?.entities?.meta_template) {
         const url = safeURL(
           `https://graph.facebook.com/v18.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`
         );
@@ -158,18 +160,30 @@ apiRouter.post("/webhook", async (req, res) => {
           return res.sendStatus(200);
         }
 
+        const payload: any = {
+          messaging_product: "whatsapp",
+          to: from,
+        };
+
+        if (ai.entities?.meta_template?.name) {
+          payload.type = "template";
+          payload.template = {
+            name: ai.entities.meta_template.name,
+            language: { code: ai.entities.meta_template.language || "es" },
+            components: ai.entities.meta_template.components || []
+          };
+        } else {
+          payload.type = "text";
+          payload.text = { body: ai.suggested_reply };
+        }
+
         await fetch(url.toString(), {
           method: "POST",
           headers: {
             Authorization: `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: from,
-            type: "text",
-            text: { body: ai.suggested_reply },
-          }),
+          body: JSON.stringify(payload),
         });
       }
     }
