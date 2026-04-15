@@ -53,10 +53,10 @@ const INITIAL_COURSES: Course[] = [
         type: 'slides',
         content: `TÉRMINOS DE CONTRATACIÓN - ROXTOR\n\n
 1. OBJETO: Prestación de servicios personales bajo dependencia en el cargo asignado.\n
-2. REMUNERACIÓN: Se establece un sueldo base de 130,00 Bs. mensuales (pagaderos semanalmente), más diferencia correspondiente al bono complementario de productividad y asistencia hasta completar el sueldo asignado en USD pagado en Bolivares (tasa BCV).\n
+2. REMUNERACIÓN: Se establece un sueldo base de 130,00 Bs. mensuales (pagaderos semanalmente), más bonos de productividad y asistencia en USD (tasa BCV).\n
 3. JORNADA LABORAL: De Lunes a Sábado, de 8:00 AM a 5:00 PM (45 horas semanales según LOTTT).\n
-4. VACACIONES: Se establecen dos (2) semanas de vacaciones anuales colectivas. La primera semana se disfrutará en el mes de Diciembre (remunerada con salario correspondiente a 1 semana más 1 semana de sueldo como aguinaldo) y la segunda semana será de disfrute con el pago de su otra semana de salario previa planificación acordada con la Gerencia.\n
-5. CONFIDENCIALIDAD Y ÉTICA: Prohibido filtrar diseños o información interna. Prohibo el uso de equipos, insumos e inventario para fines personales SIN AUTORIZACION. El maltrato a la maquinaria o falta de ética, uso indebido del uniforme fuera de ambiente de trabajo es causal de despido justificado.\n
+4. VACACIONES: 2 semanas anuales. 1 semana de descanso en Diciembre (con aguinaldo) y 1 semana flexible durante el año.\n
+5. CONFIDENCIALIDAD Y ÉTICA: Prohibido filtrar diseños o información interna. Prohibido el uso de equipos para fines personales. El maltrato a la maquinaria o falta de ética es causal de despido justificado.\n
 6. COMPROMISO ROXTOR: La empresa dotará de uniformes, herramientas y ambiente seguro en Ciudad Guayana.`
       }
     ],
@@ -905,28 +905,28 @@ const TrainingAcademy: React.FC<Props> = ({ agents, evaluations, setEvaluations,
                   </div>
 
                   <p>
-                          Entre la sociedad mercantil <b>{fiscalData.name.toUpperCase()}</b>, domiciliada en {fiscalData.address}, debidamente inscrita ante el Registro Mercantil, 
-                          representada en este acto por su Gerencia General, quien en lo sucesivo y a los efectos de este contrato se denominará <b>EL PATRONO</b>, 
-                          por una parte; y por la otra el ciudadano(a) <b>{selectedAgent.fullName?.toUpperCase()}</b>, 
-                          titular de la cédula de identidad Nro. <b>{selectedAgent.idNumber}</b>, quien en lo sucesivo se denominará 
-                          <b> EL TRABAJADOR</b>, se ha convenido en celebrar el presente contrato de trabajo sujeto a las cláusulas que se detallan a continuación:
-                        </p>
+                    Entre la sociedad mercantil <b>{fiscalData.name.toUpperCase()}</b>, domiciliada en {fiscalData.address}, debidamente inscrita ante el Registro Mercantil, 
+                    representada en este acto por su Gerencia General, quien en lo sucesivo y a los efectos de este contrato se denominará <b>EL PATRONO</b>, 
+                    por una parte; y por la otra el ciudadano(a) <b>{agent.fullName?.toUpperCase()}</b>, 
+                    titular de la cédula de identidad Nro. <b>{agent.idNumber}</b>, quien en lo sucesivo se denominará 
+                    <b> EL TRABAJADOR</b>, se ha convenido en celebrar el presente contrato de trabajo sujeto a las cláusulas que se detallan a continuación:
+                  </p>
 
-                        <div className="space-y-3">
-                          <p><b>PRIMERA (OBJETO):</b> EL TRABAJADOR se obliga a prestar sus servicios personales bajo la dependencia de EL PATRONO, desempeñando el cargo de <b>{selectedAgent.role.toUpperCase()}</b>, realizando las funciones inherentes a dicha posición y aquellas que le sean asignadas de acuerdo a su capacidad y naturaleza del servicio.</p>
-                          
-                          <p><b>SEGUNDA (FECHA DE INGRESO):</b> La relación laboral objeto de este contrato inicia el día <b>{selectedAgent.entryDate ? format(new Date(selectedAgent.entryDate), "dd 'de' MMMM 'de' yyyy", { locale: es }) : '__________'}</b>. Se establece un período de prueba de noventa (90) días, conforme a la normativa legal vigente.</p>
-                          
-                          <p><b>TERCERA (REMUNERACIÓN Y MONEDA DE CUENTA):</b> Se establece un sueldo base mensual de <b>130 Bolívares</b>, el cual será cancelado mediante cuotas semanales. Adicionalmente, la diferencia del pago se establecerá como Bono Complementario de Productividad y Asistencia hasta completar el monto de <b>{selectedAgent.complementaryBonusUsd || 0} Dólares Americanos</b>, los cuales seran pagados en Bolívares, utilizando como única referencia de cálculo el tipo de cambio oficial publicado por el Banco Central de Venezuela (BCV) vigente a la fecha de cada pago efectivo.</p>
-                          
-                          <p><b>CUARTA (JORNADA LABORAL Y ASISTENCIA):</b> La jornada de trabajo será de Lunes a Sábado, en el horario de 8:00 AM a 5:00 PM, con una (1) hora de descanso intermedio. EL TRABAJADOR acepta que el registro de asistencia se llevará a través del sistema Roxtor ERP, y que los retrasos injustificados generarán los descuentos proporcionales correspondientes sobre su remuneración integral.</p>
-                          
-                          <p><b>QUINTA (VACACIONES Y BENEFICIOS):</b> Se establecen dos (2) semanas de vacaciones anuales colectivas. La primera semana se disfrutará en el mes de Diciembre (remunerada con salario correspondiente a 1 semana más 1 semana de sueldo como aguinaldo) y la segunda semana será de disfrute con el pago de su otra semana de salario previa planificación acordada con la Gerencia.</p>
-                          
-                          <p><b>SEXTA (CONFIDENCIALIDAD Y CÓDIGO DE ÉTICA):</b> EL TRABAJADOR se compromete formalmente a mantener la más estricta confidencialidad sobre los diseños, procesos de fabricación, cartera de clientes y cualquier información interna de {fiscalData.name.toUpperCase()}. Queda prohibida la reproducción o filtración de material propiedad de la empresa. CAUSAL DE DESPIDO: El maltrato intencional de la maquinaria, equipos de computación o mobiliario, el uso de material, equipos e insumos de la empresa para uso Personal  SIN AUTORIZACION y actos indebidos o de Falta de probidad con el uso de uniforme que pongan en duda la integridad de la empresa, será causal de despido justificado según lo previsto en la LOTTT.</p>
-                          
-                          <p><b>SÉPTIMA (COMPROMISO Y DOMICILIO):</b> La empresa se compromete a dotar de uniformes, herramientas de trabajo y ambiente de trabajo seguro. Para todos los efectos derivados de este contrato, las partes eligen como domicilio especial y excluyente a la ciudad de Puerto Ordaz, Ciudad Guayana, Estado Bolívar.</p>
-                           </div>
+                  <div className="space-y-2">
+                    <p><b>PRIMERA (OBJETO):</b> EL TRABAJADOR se obliga a prestar sus servicios personales bajo la dependencia de EL PATRONO, desempeñando el cargo de <b>{agent.role.toUpperCase()}</b>, realizando las funciones inherentes a dicha posición y aquellas que le sean asignadas de acuerdo a su capacidad y naturaleza del servicio.</p>
+                    
+                    <p><b>SEGUNDA (FECHA DE INGRESO):</b> La relación laboral objeto de este contrato inicia el día <b>{agent.entryDate ? format(new Date(agent.entryDate), "dd 'de' MMMM 'de' yyyy", { locale: es }) : '__________'}</b>. Se establece un período de prueba de noventa (90) días, conforme a la normativa legal vigente.</p>
+                    
+                    <p><b>TERCERA (REMUNERACIÓN Y MONEDA DE CUENTA):</b> Se establece un sueldo base mensual de <b>130 Bolívares</b>, el cual será cancelado mediante cuotas semanales. Adicionalmente, se acuerda el pago de un Bono de Productividad y Asistencia equivalente a la cantidad de <b>{agent.complementaryBonusUsd || 0} Dólares Americanos</b>, utilizando como única referencia de cálculo el tipo de cambio oficial publicado por el Banco Central de Venezuela (BCV) vigente a la fecha de cada pago efectivo.</p>
+                    
+                    <p><b>CUARTA (JORNADA LABORAL Y ASISTENCIA):</b> La jornada de trabajo será de Lunes a Sábado, en el horario de 8:00 AM a 5:00 PM, con una (1) hora de descanso intermedio. EL TRABAJADOR acepta que el registro de asistencia se llevará a través del sistema Roxtor ERP, y que los retrasos injustificados generarán los descuentos proporcionales correspondientes sobre su remuneración integral.</p>
+                    
+                    <p><b>QUINTA (VACACIONES Y BENEFICIOS):</b> Se establecen dos (2) semanas de vacaciones anuales colectivas. La primera semana se disfrutará en el mes de Diciembre (remunerada con salario correspondiente a 1 semana más 1 semana de sueldo como aguinaldo) y la segunda semana será de disfrute con el pago de su otra semana de salario previa planificación acordada con la Gerencia.</p>
+                    
+                    <p><b>SEXTA (CONFIDENCIALIDAD Y CÓDIGO DE ÉTICA):</b> EL TRABAJADOR se compromete formalmente a mantener la más estricta confidencialidad sobre los diseños, procesos de fabricación, cartera de clientes y cualquier información interna de {fiscalData.name.toUpperCase()}. Queda prohibida la reproducción o filtración de material propiedad de la empresa. El maltrato intencional de la maquinaria, equipos de computación o mobiliario será causal de despido justificado según lo previsto en la LOTTT.</p>
+                    
+                    <p><b>SÉPTIMA (COMPROMISO Y DOMICILIO):</b> La empresa se compromete a dotar de uniformes, herramientas de trabajo y ambiente de trabajo seguro. Para todos los efectos derivados de este contrato, las partes eligen como domicilio especial y excluyente a la ciudad de Puerto Ordaz, Ciudad Guayana, Estado Bolívar.</p>
+                  </div>
 
                   <p className="pt-2">
                     Se firman dos (2) ejemplares de un mismo tenor y a un solo efecto, en Ciudad Guayana, a los {format(new Date(), 'dd')} días del mes de {format(new Date(), 'MMMM', { locale: es })} de 2026.

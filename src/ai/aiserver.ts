@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -20,13 +20,19 @@ export async function runAI(
       throw new Error("GEMINI_API_KEY is missing in environment variables");
     }
 
-    // Inicialización específica para @google/genai
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    // Inicialización con @google/generative-ai (Estándar para Node.js)
+    console.log("[AI] Initializing with key:", process.env.GEMINI_API_KEY?.substring(0, 8) + "...");
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
     // Usamos gemini-1.5-flash por defecto
     const selectedModel = "gemini-1.5-flash";
+    const model = genAI.getGenerativeModel({ 
+      model: selectedModel,
+      systemInstruction: systemInstruction
+    });
     
-    const parts: any[] = [{ text: prompt }];
+    const contents: any[] = [];
+    const userParts: any[] = [{ text: prompt }];
 
     if (image) {
       // Limpieza de base64 si viene con el prefijo data:image/...
@@ -43,7 +49,7 @@ export async function runAI(
 
       console.log(`[AI] Processing attachment: ${finalMimeType} (${base64Data.length} bytes)`);
 
-      parts.push({
+      userParts.push({
         inlineData: {
           data: base64Data,
           mimeType: finalMimeType,
@@ -51,14 +57,14 @@ export async function runAI(
       });
     }
 
+    contents.push({ role: "user", parts: userParts });
+
     console.log(`[AI] Calling model: ${selectedModel} with prompt length: ${prompt.length}`);
 
-    // Llamada a la API según el patrón de @google/genai
-    const response = await ai.models.generateContent({
-      model: selectedModel,
-      contents: [{ role: "user", parts }],
-      config: {
-        systemInstruction: systemInstruction,
+    // Llamada a la API estándar
+    const result = await model.generateContent({
+      contents,
+      generationConfig: {
         temperature: 0.1,
         topP: 0.95,
         topK: 64,
@@ -66,12 +72,12 @@ export async function runAI(
       },
     });
 
+    const response = result.response;
     if (!response) {
       throw new Error("La IA no devolvió ninguna respuesta.");
     }
 
-    // En @google/genai, .text es una propiedad directa de la respuesta
-    let text = (response as any).text || "";
+    let text = response.text() || "";
     text = text.trim();
 
     if (!text) {
@@ -100,7 +106,10 @@ export async function runAI(
       return { suggested_reply: text, raw: text };
     }
   } catch (error: any) {
-    console.error("🚨 ROXTOR AI CORE ERROR:", error.message);
+    console.error("🚨 ROXTOR AI CORE ERROR:", error);
+    if (error.response) {
+      console.error("🚨 API Response Error:", JSON.stringify(error.response.data || error.response));
+    }
     
     // Si es un error de cuota o de seguridad, lo especificamos
     let userMessage = "Lo siento, el Cerebro de Roxtor tiene una falla técnica. Intenta de nuevo. ⚡";
