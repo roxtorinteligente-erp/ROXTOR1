@@ -49,3 +49,32 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+// SERVICE WORKER ANIQUILADOR - ROXTOR ERP
+const CACHE_NAME = 'roxtor-v1.7-cleaner';
+
+self.addEventListener('install', (event) => {
+  // Fuerza al Service Worker a tomar el control de inmediato
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          // BORRA ABSOLUTAMENTE TODO LO ANTERIOR (v1, v1.6, etc)
+          console.log('Aniquilando caché antiguo:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    }).then(() => {
+      // Obliga a todas las pestañas abiertas a usar este nuevo SW limpio
+      return self.clients.claim();
+    })
+  );
+});
+
+// Este bloque asegura que NADA se cargue del caché viejo, todo va a la red
+self.addEventListener('fetch', (event) => {
+  event.respondWith(fetch(event.request));
+});
